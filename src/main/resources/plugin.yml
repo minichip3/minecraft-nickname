@@ -1,4 +1,4 @@
-name: NicknamePlugin
+name: Nickname
 version: 1.0
 main: net.minichip.minecraftnickname.MinecraftNickname
 api-version: 1.16
