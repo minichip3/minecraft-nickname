@@ -1,0 +1,15 @@
+name: Nickname Plugin
+version: 1.0
+main: net.minichip.minecraftnickname.MinecraftNickname
+api-version: 1.16
+description: "마인크래프트 닉네임 변경 플러그인"
+author: minichip3
+commands:
+  nickreload:
+    description: "닉네임 데이터를 다시 로드합니다."
+    usage: "/nickreload"
+    permission: nickname.reload
+permissions:
+  nickname.reload:
+    description: "닉네임 데이터를 다시 로드할 수 있는 권한"
+    default: op
