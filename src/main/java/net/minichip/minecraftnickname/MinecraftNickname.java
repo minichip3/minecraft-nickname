@@ -172,22 +172,213 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
         }
     }
 
-    // 닉네임 다시 불러오는 명령어 (/nickreload)
+    // 닉네임 업데이트
+    private void saveNicknames() {
+        try {
+            JSONObject json = new JSONObject(nicknames);
+            Files.write(nicknameFile.toPath(), json.toString(4).getBytes());
+            getLogger().info("닉네임 데이터가 업데이트되었습니다.");
+        } catch (IOException e) {
+            getLogger().severe("nicknames.json 파일을 저장하는 중 오류 발생: " + e.getMessage());
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // 닉네임 리로드 명령어
         if (command.getName().equalsIgnoreCase("nickreload")) {
-            if (sender.hasPermission("nickname.reload") || sender.isOp()) {
-                loadNicknames();
-                sender.sendMessage(ChatColor.GREEN + "닉네임 데이터가 다시 로드되었습니다.");
-
-                // 모든 플레이어의 닉네임을 즉시 적용
-                applyNicknamesToAllPlayers();
-                return true;
-            } else {
-                sender.sendMessage(ChatColor.RED + "이 명령어를 실행할 권한이 없습니다.");
-                return false;
-            }
+            loadNicknames();
+            sender.sendMessage(ChatColor.GREEN + "닉네임 데이터가 다시 로드되었습니다.");
+            applyNicknamesToAllPlayers();
+            return true;
         }
+
+        // 닉네임 직접 설정 명령어 (/nickset [닉네임])
+        if (command.getName().equalsIgnoreCase("nickset")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(ChatColor.RED + "이 명령어는 플레이어만 사용할 수 있습니다.");
+                return true;
+            }
+    
+            if (args.length < 1) {
+                sender.sendMessage(ChatColor.RED + "사용법: /nickset <닉네임>");
+                return true;
+            }
+    
+            Player player = (Player) sender;
+            String playerID = player.getName();
+            String newNickname = args[0];
+
+                // 이미 닉네임이 설정된 경우 변경 불가능
+            if (nicknames.containsKey(playerID)) {
+                sender.sendMessage(ChatColor.RED + "이미 닉네임이 설정되어 있습니다! 닉네임을 변경하려면 관리자에게 문의하세요.");
+                return true;
+            }
+
+            // 닉네임이 이미 존재하는지 확인
+            if (nicknames.containsValue(newNickname)) {
+                sender.sendMessage(ChatColor.RED + newNickname +"은 이미 사용 중인 닉네임입니다!");
+                return true;
+            }
+    
+            // 닉네임 설정
+            nicknames.put(playerID, newNickname);
+            saveNicknames();
+            sender.sendMessage(ChatColor.GREEN + "닉네임이 '" + newNickname + "'(으)로 설정되었습니다!");
+    
+            // 즉시 적용
+            applyNicknameToPlayer(player);
+            return true;
+        }
+        
+        //
+        if (command.getName().equalsIgnoreCase("nickadd")) {
+            if (args.length < 2) {
+                sender.sendMessage(ChatColor.RED + "사용법: /nickadd <플레이어ID> <닉네임>");
+                return true;
+            }
+        
+            String playerID = args[0];
+            String nickname = args[1];
+        
+            // 플레이어가 실제 존재하는지 확인
+            if (!MojangAPI.doesPlayerExist(playerID)) {
+                sender.sendMessage(ChatColor.RED + playerID + "는 존재하지 않는 마인크래프트 계정입니다!");
+                return true;
+            }
+        
+            if (nicknames.containsKey(playerID)) {
+                sender.sendMessage(ChatColor.RED + playerID + "의 닉네임이 이미 존재합니다!");
+                return true;
+            }
+        
+            // 새 닉네임이 이미 존재하는지 확인
+            if (nicknames.containsValue(nickname)) {
+                sender.sendMessage(ChatColor.RED + nickname +"은(는) 이미 사용 중인 닉네임입니다!");
+                return true;
+            }
+            
+
+            nicknames.put(playerID, nickname);
+            saveNicknames();
+            sender.sendMessage(ChatColor.GREEN + playerID + "의 닉네임이 '" + nickname + "'으로 추가되었습니다!");
+        
+            // 즉시 적용
+            Player player = Bukkit.getPlayer(playerID);
+            if (player != null) {
+                applyNicknameToPlayer(player);
+            }
+        
+            return true;
+        }
+
+        // 관리자용 닉네임 수정 명령어 (/nickmodify [닉네임 or 플레이어] [새 닉네임])
+        if (command.getName().equalsIgnoreCase("nickmodify")) {
+            if (!sender.hasPermission("nickname.manage")) {
+                sender.sendMessage(ChatColor.RED + "이 명령어를 실행할 권한이 없습니다.");
+                return true;
+            }
+    
+            if (args.length < 2) {
+                sender.sendMessage(ChatColor.RED + "사용법: /nickmodify <닉네임 or 플레이어> <새 닉네임>");
+                return true;
+            }
+    
+            String target = args[0];
+            String newNickname = args[1];
+    
+            // 새 닉네임이 이미 존재하는지 확인
+            if (nicknames.containsValue(newNickname)) {
+                sender.sendMessage(ChatColor.RED + "이미 사용 중인 닉네임입니다!");
+                return true;
+            }
+    
+            boolean found = false;
+    
+            // 닉네임을 기준으로 변경
+            for (Map.Entry<String, String> entry : nicknames.entrySet()) {
+                if (entry.getValue().equals(target)) {
+                    nicknames.put(entry.getKey(), newNickname);
+                    found = true;
+                    break;
+                }
+            }
+    
+            // 플레이어 이름을 기준으로 변경
+            if (!found && nicknames.containsKey(target)) {
+                nicknames.put(target, newNickname);
+                found = true;
+            }
+    
+            if (!found) {
+                sender.sendMessage(ChatColor.RED + "해당 플레이어나 닉네임을 찾을 수 없습니다.");
+                return true;
+            }
+    
+            saveNicknames();
+            sender.sendMessage(ChatColor.GREEN + target + "의 닉네임이 '" + newNickname + "'으로 변경되었습니다!");
+    
+            // 즉시 적용
+            Player targetPlayer = Bukkit.getPlayer(target);
+            if (targetPlayer != null) {
+                applyNicknameToPlayer(targetPlayer);
+            }
+    
+            return true;
+        }
+
+        // 닉네임 삭제 명령어
+        if (command.getName().equalsIgnoreCase("nickdel")) {
+            if (!sender.hasPermission("nickname.manage")) {
+                sender.sendMessage(ChatColor.RED + "이 명령어를 실행할 권한이 없습니다.");
+                return true;
+            }
+
+            if (args.length < 1) {
+                sender.sendMessage(ChatColor.RED + "사용법: /nickdel <플레이어ID 또는 닉네임>");
+                return true;
+            }
+
+            String target = args[0];
+            boolean found = false;
+
+            // 플레이어 ID로 직접 삭제 시도
+            if (nicknames.containsKey(target)) {
+                nicknames.remove(target);
+                found = true;
+            } else {
+                // 닉네임으로 플레이어 찾기
+                String playerToRemove = null;
+                for (Map.Entry<String, String> entry : nicknames.entrySet()) {
+                    if (entry.getValue().equals(target)) {
+                        playerToRemove = entry.getKey();
+                        break; // 동일한 닉네임이 여러 개일 경우, 첫 번째만 삭제
+                    }
+                }
+
+                if (playerToRemove != null) {
+                    nicknames.remove(playerToRemove);
+                    found = true;
+                    target = playerToRemove; // 출력 메시지에 사용할 수 있도록 변경
+                }
+            }
+
+            if (!found) {
+                sender.sendMessage(ChatColor.RED + target + "의 닉네임이 존재하지 않습니다!");
+                return true;
+            }
+
+            saveNicknames();
+            sender.sendMessage(ChatColor.GREEN + target + "의 닉네임이 삭제되었습니다!");
+
+            // 즉시 적용
+            Player player = Bukkit.getPlayer(target);
+            if (player != null) {
+                applyNicknameToPlayer(player);
+            }
+
+            return true;
+        }            
         return false;
     }
 }

@@ -5,11 +5,26 @@ api-version: 1.16
 description: "마인크래프트 닉네임 변경 플러그인"
 author: minichip3
 commands:
+  nickset:
+    description: "자신의 닉네임을 설정합니다."
+    usage: "/nickset <닉네임>"
   nickreload:
     description: "닉네임 데이터를 다시 로드합니다."
     usage: "/nickreload"
-    permission: nickname.reload
+    permission: nickname.manage
+  nickadd:
+    description: "닉네임을 추가합니다."
+    usage: "/nickadd <플레이어ID> <닉네임>"
+    permission: nickname.manage
+  nickmodify:
+    description: "기존 닉네임을 수정하거나 특정 플레이어의 닉네임을 변경합니다."
+    usage: "/nickmodify <닉네임 or 플레이어> <새 닉네임>"
+    permission: nickname.manage
+  nickdel:
+    description: "닉네임을 삭제합니다."
+    usage: "/nickdel <닉네임 or 플레이어>"
+    permission: nickname.manage
 permissions:
-  nickname.reload:
-    description: "닉네임 데이터를 다시 로드할 수 있는 권한"
+  nickname.manage:
+    description: "닉네임 데이터를 관리할 수 있는 권한"
     default: op
