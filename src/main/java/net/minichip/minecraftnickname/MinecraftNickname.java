@@ -229,7 +229,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             return true;
         }
         
-        //
+        // 닉네임 직접 설정 명령어 (/nickset [플렝이어] [닉네임])
         if (command.getName().equalsIgnoreCase("nickadd")) {
             if (args.length < 2) {
                 sender.sendMessage(ChatColor.RED + "사용법: /nickadd <플레이어ID> <닉네임>");
@@ -260,13 +260,8 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             nicknames.put(playerID, nickname);
             saveNicknames();
             sender.sendMessage(ChatColor.GREEN + playerID + "의 닉네임이 '" + nickname + "'으로 추가되었습니다!");
-        
-            // 즉시 적용
-            Player player = Bukkit.getPlayer(playerID);
-            if (player != null) {
-                applyNicknamesToAllPlayers();
-            }
-        
+            applyNicknamesToAllPlayers();
+            
             return true;
         }
 
@@ -315,12 +310,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
     
             saveNicknames();
             sender.sendMessage(ChatColor.GREEN + target + "의 닉네임이 '" + newNickname + "'으로 변경되었습니다!");
-    
-            // 즉시 적용
-            Player targetPlayer = Bukkit.getPlayer(target);
-            if (targetPlayer != null) {
-                applyNicknamesToAllPlayers();
-            }
+            applyNicknamesToAllPlayers();
     
             return true;
         }
@@ -368,12 +358,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
 
             saveNicknames();
             sender.sendMessage(ChatColor.GREEN + target + "의 닉네임이 삭제되었습니다!");
-
-            // 즉시 적용
-            Player player = Bukkit.getPlayer(target);
-            if (player != null) {
-                applyNicknamesToAllPlayers();
-            }
+            applyNicknamesToAllPlayers();
 
             return true;
         }            
