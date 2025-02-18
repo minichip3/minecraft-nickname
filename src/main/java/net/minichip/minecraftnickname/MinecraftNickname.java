@@ -221,13 +221,11 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
                 return true;
             }
     
-            // 닉네임 설정
+            // 닉네임 설정 및 적용
             nicknames.put(playerID, newNickname);
             saveNicknames();
             sender.sendMessage(ChatColor.GREEN + "닉네임이 '" + newNickname + "'(으)로 설정되었습니다!");
-    
-            // 즉시 적용
-            applyNicknameToPlayer(player);
+            applyNicknamesToAllPlayers();;
             return true;
         }
         
@@ -266,7 +264,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             // 즉시 적용
             Player player = Bukkit.getPlayer(playerID);
             if (player != null) {
-                applyNicknameToPlayer(player);
+                applyNicknamesToAllPlayers();
             }
         
             return true;
@@ -321,7 +319,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             // 즉시 적용
             Player targetPlayer = Bukkit.getPlayer(target);
             if (targetPlayer != null) {
-                applyNicknameToPlayer(targetPlayer);
+                applyNicknamesToAllPlayers();
             }
     
             return true;
@@ -374,7 +372,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             // 즉시 적용
             Player player = Bukkit.getPlayer(target);
             if (player != null) {
-                applyNicknameToPlayer(player);
+                applyNicknamesToAllPlayers();
             }
 
             return true;
