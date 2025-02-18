@@ -1,6 +1,8 @@
 # 설명
 마인크래프트 서버에 닉네임 기능을 추가해 주는 플러그인
 
+[최신버전 다운로드](https://github.com/minichip3/minecraft-nickname/releases/latest/download/MinecraftNickname.jar)
+
 # 사용법
 
 ### 모든플레이어가 사용가능한 명령
