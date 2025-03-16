@@ -1,5 +1,5 @@
 name: Nickname
-version: 1.0
+version: 1.0.2
 main: net.minichip.minecraftnickname.MinecraftNickname
 api-version: 1.16
 description: "마인크래프트 닉네임 변경 플러그인"

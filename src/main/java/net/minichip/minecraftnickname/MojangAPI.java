@@ -33,4 +33,36 @@ public class MojangAPI {
         }
         return false;
     }
+
+    // getUUID 메서드 추가: 플레이어 이름으로 Mojang API를 호출하여 UUID 문자열을 반환
+    public static String getUUID(String playerName) {
+        try {
+            URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + playerName);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
+            
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                Scanner scanner = new Scanner(connection.getInputStream());
+                StringBuilder response = new StringBuilder();
+                while (scanner.hasNext()) {
+                    response.append(scanner.nextLine());
+                }
+                scanner.close();
+
+                JSONObject jsonResponse = new JSONObject(response.toString());
+                String trimmedUuid = jsonResponse.getString("id");
+                if (trimmedUuid != null && trimmedUuid.length() == 32) {
+                    return trimmedUuid.replaceFirst("(.{8})(.{4})(.{4})(.{4})(.+)", "$1-$2-$3-$4-$5");
+                } else {
+                    return trimmedUuid;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
