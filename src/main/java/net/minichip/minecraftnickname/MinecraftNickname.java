@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -154,12 +155,63 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
         }
     }
 
+    private void validateAndUpdateAllPlayerNames() {
+        boolean updated = false;
+        // nicknames 맵의 모든 항목을 순회합니다.
+        for (Map.Entry<String, JSONObject> entry : nicknames.entrySet()) {
+            String uuid = entry.getKey();
+            JSONObject data = entry.getValue();
+            // UUID로 온라인 플레이어 찾기 (UUID 객체로 변환)
+            Player player = Bukkit.getPlayer(java.util.UUID.fromString(uuid));
+            if (player != null) {
+                String storedName = data.optString("name", "");
+                String currentName = player.getName();
+                // 저장된 이름과 현재 이름이 다르면 업데이트
+                if (!storedName.equals(currentName)) {
+                    data.put("name", currentName);
+                    updated = true;
+                    getLogger().info("플레이어 " + uuid + "의 이름을 업데이트했습니다: " + currentName);
+                }
+            }
+        }
+        // 하나라도 업데이트되었다면 nicknames.json 파일 저장
+        if (updated) {
+            saveNicknames();
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // 모든 저장된 닉네임 항목 검증 및 업데이트
+        validateAndUpdateAllPlayerNames();
+        // 그 후, 해당 플레이어에게 닉네임 적용
+        applyNicknamesToAllPlayers();
+        // 입장 메시지
+        Player player = event.getPlayer();
+        String uuid = player.getUniqueId().toString();
+        String displayName;
+        if (nicknames.containsKey(uuid)) {
+            JSONObject data = nicknames.get(uuid);
+            String nick = data.optString("nick", null);
+            String actualName = data.optString("name", player.getName());
+            if (nick != null) {
+                displayName = ChatColor.AQUA + "[" + nick + "] " + ChatColor.RESET + actualName;
+            } else {
+                displayName = actualName;
+            }
+        } else {
+            displayName = player.getName();
+        }
+        event.setJoinMessage(displayName + ChatColor.GREEN + " 님이 접속하셨습니다.");
+        }
+
     // --- 명령어 처리 ---
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // /nickreload: 닉네임 파일 재로드
         if (command.getName().equalsIgnoreCase("nickreload")) {
             loadNicknames();
+            validateAndUpdateAllPlayerNames();
             sender.sendMessage(ChatColor.GREEN + "닉네임 데이터가 다시 로드되었습니다.");
             applyNicknamesToAllPlayers();
             return true;
