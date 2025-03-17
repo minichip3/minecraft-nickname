@@ -11,6 +11,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +44,7 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
             createDefaultConfig();
         }
         loadConfig();
+        convertOldNicknames();
         loadNicknames();
 
         getServer().getPluginManager().registerEvents(this, this);
@@ -205,12 +208,116 @@ public class MinecraftNickname extends JavaPlugin implements Listener {
         event.setJoinMessage(displayName + ChatColor.GREEN + " 님이 접속하셨습니다.");
         }
 
+    private void convertOldNicknames() {
+        if (!isOldVersion()) {
+            return;
+        }
+    
+        getLogger().warning("기존 닉네임 파일을 새 버전으로 변환합니다...");
+    
+        try {
+            String content = new String(Files.readAllBytes(nicknameFile.toPath()));
+            JSONObject oldJson = new JSONObject(content);
+            JSONObject newJson = new JSONObject();
+    
+            // 기존 머리 위 닉네임 삭제
+            removeAllOverheadNicknames();
+
+            for (String playerName : oldJson.keySet()) {
+                String nickname = oldJson.getString(playerName);
+    
+                String uuid = null;
+
+                // Mojang API를 최대 3번 시도
+                for (int i = 0; i < 3; i++) {
+                    uuid = MojangAPI.getUUID(playerName);
+                    if (uuid != null && !uuid.isEmpty()) {
+                        break; // UUID를 정상적으로 가져오면 중단
+                    }
+
+                    // API 요청 속도 제한 방지를 위한 대기 시간 추가
+                    try {
+                        Thread.sleep(1000); // 1초 대기 후 다시 시도
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        getLogger().warning("API 요청 대기 중 인터럽트 발생: " + e.getMessage());
+                    }
+                }
+
+
+                // UUID가 없거나 유효하지 않으면 변환하지 않고 삭제
+                if (uuid == null || uuid.isEmpty()) {
+                    getLogger().warning("UUID를 찾을 수 없는 플레이어: " + playerName + " (닉네임 삭제됨)");
+                    continue; // 해당 플레이어는 변환 안 함
+                }
+    
+                // 새 형식으로 변환
+                JSONObject playerData = new JSONObject();
+                playerData.put("name", playerName);
+                playerData.put("nick", nickname);
+    
+                newJson.put(uuid, playerData);
+            }
+    
+            // 변환된 데이터 저장
+            Files.write(nicknameFile.toPath(), newJson.toString(4).getBytes());
+            getLogger().info("닉네임 변환 완료!");
+    
+        } catch (IOException e) {
+            getLogger().severe("닉네임 변환 중 오류 발생: " + e.getMessage());
+        }
+    }
+        
+
+    private boolean isOldVersion() {
+        if (!nicknameFile.exists()) {
+            return false;
+        }
+    
+        try {
+            String content = new String(Files.readAllBytes(nicknameFile.toPath()));
+            JSONObject json = new JSONObject(content);
+    
+            for (String key : json.keySet()) {
+                Object value = json.get(key);
+                if (value instanceof String) {
+                    return true; // 기존 버전 감지됨
+                }
+            }
+        } catch (IOException e) {
+            getLogger().severe("nicknames.json 파일을 읽는 중 오류 발생: " + e.getMessage());
+        }
+    
+        return false;
+    }
+
+    private void removeAllOverheadNicknames() {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+    
+        for (String uuid : nicknames.keySet()) {
+            String playerName = nicknames.get(uuid).getString("name");
+            Team team = scoreboard.getTeam(playerName);
+            if (team != null) {
+                if (team.hasEntry(playerName)) {
+                    team.removeEntry(playerName);
+                }
+                team.unregister();
+                getLogger().info(playerName + "의 머리 위 닉네임을 제거했습니다.");
+            } else {
+                getLogger().warning(playerName + "의 팀을 찾을 수 없습니다.");
+            }
+        }
+    }
+
+
+
     // --- 명령어 처리 ---
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // /nickreload: 닉네임 파일 재로드
         if (command.getName().equalsIgnoreCase("nickreload")) {
             loadNicknames();
+            removeAllOverheadNicknames();
             validateAndUpdateAllPlayerNames();
             sender.sendMessage(ChatColor.GREEN + "닉네임 데이터가 다시 로드되었습니다.");
             applyNicknamesToAllPlayers();

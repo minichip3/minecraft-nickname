@@ -5,7 +5,7 @@
 
     <groupId>net.minichip.minecraftnickname</groupId>
     <artifactId>MinecraftNickname</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 
     <repositories>
         <!-- Spigot API 리포지토리 추가 -->
@@ -43,8 +43,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>17</source> <!-- JDK 17 사용 -->
-                    <target>17</target>
+                    <source>21</source> <!-- JDK 21 사용 -->
+                    <target>21</target>
                 </configuration>
             </plugin>
 

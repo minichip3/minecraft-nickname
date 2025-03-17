@@ -10,6 +10,7 @@ import org.json.JSONObject;
 public class MojangAPI {
     public static boolean doesPlayerExist(String playerName) {
         try {
+            @SuppressWarnings("deprecation")
             URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + playerName);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -37,6 +38,7 @@ public class MojangAPI {
     // getUUID 메서드 추가: 플레이어 이름으로 Mojang API를 호출하여 UUID 문자열을 반환
     public static String getUUID(String playerName) {
         try {
+            @SuppressWarnings("deprecation")
             URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + playerName);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
